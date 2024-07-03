@@ -1,15 +1,18 @@
+/**
+ * @file board.h
+ *
+ * The board representation of Breakthrough game is defined.
+ * Pieces are represented by integers. In base 2, those are:
+ * - 0: EMPTY
+ * - 2: WHITE
+ * - 4: BLACK
+ */
+
 #ifndef BOARD_H_
 #define BOARD_H_
 
-void create_graphical_board() {
-    for (int file = 0; file < 8; file++) {
-        for (int rank = 0; rank < 8; rank++) {
-            bool is_light_square = (file + rank) % 2 != 0;
-
-            int square_color = is_light_square ? 1 : 0;
-        }
-    }
-}
+#include <array>
+#include <cstdint>
 
 enum Piece {
     EMPTY = 0,
@@ -28,6 +31,23 @@ inline bool is_white(Piece piece) {
 inline bool is_black(Piece piece) {
     return piece & 4;
 }
+
+using Square = int;
+
+struct Move {
+    Square source;
+    Square target;
+};
+
+class Board {
+public:
+    Board();
+
+    Piece at(Square square) const;
+
+private:
+    std::array<Piece, 64> m_squares;
+};
 
 
 #endif // BOARD_H_
