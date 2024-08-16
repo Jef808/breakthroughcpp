@@ -60,12 +60,9 @@ Board::Board(std::istream& fen) {
 }
 
 std::string Board::fen() const {
-    std::string fen_string;
-    fen_string.reserve(90);
+    std::stringstream ss;
 
-    auto fen = std::back_inserter(fen_string);
     auto square = m_squares.begin();
-
     for (int rank = 0; rank < 8; ++rank) {
         auto end = square + 8;
         auto empty_count = 0;
@@ -73,16 +70,16 @@ std::string Board::fen() const {
         for (; square != end; ++square) {
             if (*square == Piece::WHITE) {
                 if (empty_count) {
-                    fen = empty_count;
+                    ss << empty_count;
                 }
-                fen = 'P';
+                ss << 'P';
                 empty_count = 0;
             }
             else if (*square == Piece::BLACK) {
                 if (empty_count) {
-                    fen = empty_count;
+                    ss << empty_count;
                 }
-                fen = 'p';
+                ss << 'p';
                 empty_count = 0;
             }
             else {
@@ -90,21 +87,16 @@ std::string Board::fen() const {
             }
         }
         if (square != m_squares.end()) {
-            fen = '/';
+            ss << '/';
         }
     }
-    fen = ' ';
-
     auto black_to_play = m_ply & 1;
-    fen = black_to_play ? 'b' : 'w';
 
-    auto constexpr flags = " - - 0 ";
-    std::copy_n(&flags[0], 7, fen);
+    ss << (black_to_play ? " b" : " w");
+    ss << " - - 0 ";
+    ss << int(m_ply / 2) + 1;
 
-    int full_moves = m_ply / 2 + 1;
-    fen = full_moves;
-
-    return fen_string;
+    return ss.str();
 }
 
 void Board::play(Move move) {

@@ -44,3 +44,11 @@ TEST_CASE("Board default constructor initializes pieces correctly", "[Board]") {
         }
     }
 }
+
+TEST_CASE("Board outputs correct fen strings", "[Board]") {
+    Board board;
+
+    SECTION("Initial game has correct fen string") {
+        REQUIRE(board.fen() == "PPPPPPPP/PPPPPPPP/////pppppppp/pppppppp w - - 0 1");
+    }
+}
