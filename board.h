@@ -19,6 +19,8 @@
 #include <cstdint>
 #include <iosfwd>
 
+namespace breakthrough {
+
 /**
  * The three types of pieces in the game.
  */
@@ -117,5 +119,6 @@ private:
     int m_ply{ 0 };
 };
 
+}  // namespace breakthrough
 
 #endif // BOARD_H_

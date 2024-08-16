@@ -8,6 +8,8 @@
 #include <system_error>
 #include "board.h"
 
+namespace breakthrough {
+
 Board::Board() {
     std::fill_n(m_squares.begin(), 16, Piece::WHITE);
     std::fill_n(m_squares.begin() + 16, 32, Piece::EMPTY);
@@ -109,3 +111,5 @@ void Board::play(Move move) {
     m_squares[move.target] = m_squares[move.source];
     m_squares[move.source] = Piece::EMPTY;
 }
+
+}  // namespace breakthrough

@@ -1,6 +1,8 @@
 #include "catch2/catch_test_macros.hpp"
 #include "board.h"
 
+using namespace breakthrough;
+
 TEST_CASE("Piece functions", "[board]") {
     SECTION("is_empty function") {
         REQUIRE(is_empty(Piece::EMPTY) == true);
