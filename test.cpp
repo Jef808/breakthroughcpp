@@ -1,7 +1,7 @@
 #include "catch2/catch_test_macros.hpp"
 #include "board.h"
 
-TEST_CASE("Board piece type checks", "[board]") {
+TEST_CASE("Piece functions", "[board]") {
     SECTION("is_empty function") {
         REQUIRE(is_empty(Piece::EMPTY) == true);
         REQUIRE(is_empty(Piece::WHITE) == false);

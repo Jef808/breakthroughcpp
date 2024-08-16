@@ -9,11 +9,13 @@ set(CMAKE_CXX_STANDARD 20 CACHE STRING "The C++ standard to use")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_library(${PROJECT_NAME}_LIBRARIES board.h board.cpp)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+add_library(${PROJECT_NAME}_LIBS board.h board.cpp)
 
 # Add the executable for the main project
 add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_LIBRARIES)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_LIBS)
 
 # Testing configuration
 enable_testing()
@@ -33,7 +35,7 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(tests test.cpp)
 
 # Link the test executable with Catch2
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain ${PROJECT_NAME}_LIBRARIES)
+target_link_libraries(tests PRIVATE Catch2::Catch2WithMain ${PROJECT_NAME}_LIBS)
 
 # Add a custom target for running tests
 add_custom_target(run_tests
