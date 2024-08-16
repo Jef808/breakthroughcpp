@@ -102,6 +102,16 @@ std::string Board::fen() const {
 void Board::play(Move move) {
     m_squares[move.target] = m_squares[move.source];
     m_squares[move.source] = Piece::EMPTY;
+    ++m_ply;
+}
+
+bool Board::is_terminal() const {
+    const bool black_to_play = m_ply & 1;
+    if (black_to_play) {
+        return std::any_of(m_squares.begin(), m_squares.begin() + 8, is_white);
+    } else {
+        return std::any_of(m_squares.begin() + 55, m_squares.end(), is_black);
+    }
 }
 
 }  // namespace breakthrough

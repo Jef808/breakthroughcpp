@@ -93,6 +93,11 @@ public:
     void play(Move move);
 
     /**
+     * Check if the game is over.
+     */
+    bool is_terminal() const;
+
+    /**
      * Const access to the piece at the given square.
      */
     Piece at(Square square) const { return m_squares[square]; }

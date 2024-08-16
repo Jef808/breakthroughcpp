@@ -11,11 +11,17 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_library(${PROJECT_NAME}_LIBS board.h board.cpp)
+add_library(${PROJECT_NAME}_BOARD
+  board.h board.cpp)
+add_library(${PROJECT_NAME}_AGENT
+  agent.h agent.cpp)
 
 # Add the executable for the main project
 add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_LIBS)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+  ${PROJECT_NAME}_BOARD
+  ${PROJECT_NAME}_AGENT
+)
 
 # Testing configuration
 enable_testing()
@@ -35,7 +41,10 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(tests test.cpp)
 
 # Link the test executable with Catch2
-target_link_libraries(tests PRIVATE Catch2::Catch2WithMain ${PROJECT_NAME}_LIBS)
+target_link_libraries(tests PRIVATE
+  Catch2::Catch2WithMain
+  ${PROJECT_NAME}_BOARD
+  ${PROJECT_NAME}_AGENT)
 
 # Add a custom target for running tests
 add_custom_target(run_tests
