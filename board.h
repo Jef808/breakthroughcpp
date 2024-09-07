@@ -18,6 +18,7 @@
 #include <array>
 #include <cstdint>
 #include <iosfwd>
+#include "zobrist.h"
 
 namespace breakthrough {
 
@@ -108,6 +109,11 @@ public:
     int ply() const { return m_ply; }
 
     /**
+     * Get the value of the hash for the current position.
+     */
+    uint64_t hash() const { return m_hash; }
+
+    /**
      * Construct the fen string of the current position.
      */
     std::string fen() const;
@@ -119,9 +125,19 @@ private:
     std::array<Piece, 64> m_squares;
 
     /**
+     * Used for updating the hash value.
+     */
+    Zobrist m_zobrist{};
+
+    /**
+     * The hash value for the current position.
+     */
+    uint64_t m_hash{0};
+
+    /**
      * The current ply (half-move) of the game.
      */
-    int m_ply{ 0 };
+    int m_ply{0};
 };
 
 }  // namespace breakthrough

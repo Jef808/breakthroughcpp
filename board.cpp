@@ -10,12 +10,6 @@
 
 namespace breakthrough {
 
-Board::Board() {
-    std::fill_n(m_squares.begin(), 16, Piece::WHITE);
-    std::fill_n(m_squares.begin() + 16, 32, Piece::EMPTY);
-    std::fill_n(m_squares.rbegin(), 16, Piece::BLACK);
-}
-
 namespace {
 
 constexpr auto to_int = [](std::string_view sv) -> std::optional<int> {
@@ -26,7 +20,29 @@ constexpr auto to_int = [](std::string_view sv) -> std::optional<int> {
     return std::nullopt;
 };
 
+inline int hash_key(Square square, Piece piece) {
+    return (square << 2) ^ piece;
+}
+
 }  // namespace
+
+Board::Board() {
+    std::fill_n(m_squares.begin(), 16, Piece::WHITE);
+    std::fill_n(m_squares.begin() + 16, 32, Piece::EMPTY);
+    std::fill_n(m_squares.rbegin(), 16, Piece::BLACK);
+
+    // Initialize the zobrist hash table
+    for (int i = 0; i < 64; ++i) {
+        m_zobrist.generate(hash_key(i, Piece::WHITE));
+        m_zobrist.generate(hash_key(i, Piece::BLACK));
+    }
+
+    // Initialize the position hash
+    for (int i = 0; i < 16; ++i) {
+        m_hash ^= m_zobrist[hash_key(i, Piece::WHITE)];
+        m_hash ^= m_zobrist[hash_key(63 - i, Piece::BLACK)];
+    }
+}
 
 Board::Board(std::istream& fen) {
     std::string buf;
@@ -46,6 +62,10 @@ Board::Board(std::istream& fen) {
                 *square++ = Piece::EMPTY;
             }
         }
+    }
+
+    for (int i = 0; i < 64; ++i) {
+        m_hash ^= hash_key(i, m_squares[i]);
     }
 
     std::getline(fen, buf, ' ');
@@ -100,6 +120,14 @@ std::string Board::fen() const {
 }
 
 void Board::play(Move move) {
+    // Update the hash value
+    m_hash ^= m_zobrist[hash_key(move.source, m_squares[move.source])];
+    if (!is_empty(m_squares[move.target])) {
+        m_hash ^= m_zobrist[hash_key(move.target, m_squares[move.target])];
+    }
+    m_hash ^= m_zobrist[hash_key(move.target, m_squares[move.source])];
+
+    // Update the board
     m_squares[move.target] = m_squares[move.source];
     m_squares[move.source] = Piece::EMPTY;
     ++m_ply;
@@ -107,11 +135,8 @@ void Board::play(Move move) {
 
 bool Board::is_terminal() const {
     const bool black_to_play = m_ply & 1;
-    if (black_to_play) {
-        return std::any_of(m_squares.begin(), m_squares.begin() + 8, is_white);
-    } else {
-        return std::any_of(m_squares.begin() + 55, m_squares.end(), is_black);
-    }
+    return (black_to_play && std::any_of(m_squares.end() - 8, m_squares.end(), is_white)) ||
+        (!black_to_play && std::any_of(m_squares.begin(), m_squares.begin() + 8, is_black));
 }
 
 }  // namespace breakthrough
