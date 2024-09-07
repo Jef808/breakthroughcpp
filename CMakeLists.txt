@@ -12,15 +12,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_library(${PROJECT_NAME}_BOARD
-  board.h board.cpp)
-add_library(${PROJECT_NAME}_AGENT
-  agent.h agent.cpp)
+  board.h board.cpp zobrist.h)
+
+add_library(${PROJECT_NAME}_MCTS
+  mcts.h mcts.cpp movegen.h movegen.cpp)
 
 # Add the executable for the main project
 add_executable(${PROJECT_NAME} main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE
   ${PROJECT_NAME}_BOARD
-  ${PROJECT_NAME}_AGENT
+  ${PROJECT_NAME}_MCTS
 )
 
 # Testing configuration
@@ -44,7 +45,7 @@ add_executable(tests test.cpp)
 target_link_libraries(tests PRIVATE
   Catch2::Catch2WithMain
   ${PROJECT_NAME}_BOARD
-  ${PROJECT_NAME}_AGENT)
+  ${PROJECT_NAME}_MCTS)
 
 # Add a custom target for running tests
 add_custom_target(run_tests
