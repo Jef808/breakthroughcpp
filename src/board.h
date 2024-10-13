@@ -18,7 +18,6 @@
 #include <array>
 #include <cstdint>
 #include <iosfwd>
-#include "zobrist.h"
 
 namespace breakthrough {
 
@@ -26,30 +25,30 @@ namespace breakthrough {
  * The three types of pieces in the game.
  */
 enum Piece {
-    EMPTY = 0,
-    WHITE = 2,
-    BLACK = 4,
+    EMPTY,
+    WHITE,
+    BLACK
 };
 
 /**
  * Helper function checking if a piece is empty.
  */
 inline bool is_empty(Piece piece) {
-    return not piece;
+    return piece == Piece::EMPTY;
 }
 
 /**
  * Helper function checking if a piece is white.
  */
 inline bool is_white(Piece piece) {
-    return piece & 2;
+    return piece == Piece::WHITE;
 }
 
 /**
  * Helper function checking if a piece is black.
  */
 inline bool is_black(Piece piece) {
-    return piece & 4;
+    return piece == Piece::BLACK;
 }
 
 /**
@@ -114,6 +113,11 @@ public:
     uint64_t hash() const { return m_hash; }
 
     /**
+     * Access the whole board
+     */
+    const std::array<Piece, 64>& squares() const { return m_squares; }
+
+    /**
      * Construct the fen string of the current position.
      */
     std::string fen() const;
@@ -123,11 +127,6 @@ private:
      * The piece value of each square of the board.
      */
     std::array<Piece, 64> m_squares;
-
-    /**
-     * Used for updating the hash value.
-     */
-    Zobrist m_zobrist{};
 
     /**
      * The hash value for the current position.

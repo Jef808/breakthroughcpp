@@ -7,6 +7,7 @@
 #include <optional>
 #include <system_error>
 #include "board.h"
+#include "zobrist.h"
 
 namespace breakthrough {
 
@@ -20,8 +21,28 @@ constexpr auto to_int = [](std::string_view sv) -> std::optional<int> {
     return std::nullopt;
 };
 
-inline int hash_key(Square square, Piece piece) {
-    return (square << 2) ^ piece;
+/**
+ * Used for updating the hash value.
+ */
+Zobrist zobrist;
+
+inline uint64_t get_hash(Square square, Piece piece) {
+    if (is_empty(piece)) {
+        return 0;
+    }
+    uint64_t value = zobrist[(square << 3) ^ piece];
+    assert(value != 0 && "Zobrist value is 0");
+
+    return value;
+}
+
+void init_zobrist() {
+    for (int i = 0; i < 64; ++i) {
+        zobrist.generate((i << 3) ^ Piece::WHITE);
+        zobrist.generate((i << 3) ^ Piece::BLACK);
+    }
+
+    assert(zobrist.size() == 128 && "Zobrist table not of size 128 after initialization");
 }
 
 }  // namespace
@@ -31,16 +52,14 @@ Board::Board() {
     std::fill_n(m_squares.begin() + 16, 32, Piece::EMPTY);
     std::fill_n(m_squares.rbegin(), 16, Piece::BLACK);
 
-    // Initialize the zobrist hash table
-    for (int i = 0; i < 64; ++i) {
-        m_zobrist.generate(hash_key(i, Piece::WHITE));
-        m_zobrist.generate(hash_key(i, Piece::BLACK));
+    if (zobrist.size() == 0) {
+        init_zobrist();
     }
 
     // Initialize the position hash
     for (int i = 0; i < 16; ++i) {
-        m_hash ^= m_zobrist[hash_key(i, Piece::WHITE)];
-        m_hash ^= m_zobrist[hash_key(63 - i, Piece::BLACK)];
+        m_hash ^= get_hash(i, Piece::WHITE);
+        m_hash ^= get_hash(63 - i, Piece::BLACK);
     }
 }
 
@@ -64,10 +83,6 @@ Board::Board(std::istream& fen) {
         }
     }
 
-    for (int i = 0; i < 64; ++i) {
-        m_hash ^= hash_key(i, m_squares[i]);
-    }
-
     std::getline(fen, buf, ' ');
     auto black_to_play = buf[0] == 'b';
 
@@ -77,6 +92,14 @@ Board::Board(std::istream& fen) {
     fen >> full_moves;
 
     m_ply = (full_moves - 1) * 2 + black_to_play;
+
+    if (zobrist.size() == 0) {
+        init_zobrist();
+    }
+
+    for (int i = 0; i < 64; ++i) {
+        m_hash ^= get_hash(i, m_squares[i]);
+    }
 }
 
 std::string Board::fen() const {
@@ -121,15 +144,15 @@ std::string Board::fen() const {
 
 void Board::play(Move move) {
     // Update the hash value
-    m_hash ^= m_zobrist[hash_key(move.source, m_squares[move.source])];
-    if (!is_empty(m_squares[move.target])) {
-        m_hash ^= m_zobrist[hash_key(move.target, m_squares[move.target])];
-    }
-    m_hash ^= m_zobrist[hash_key(move.target, m_squares[move.source])];
+    m_hash ^= get_hash(move.source, m_squares[move.source]);
+    m_hash ^= get_hash(move.target, m_squares[move.target]);
+    m_hash ^= get_hash(move.target, m_squares[move.source]);
 
     // Update the board
     m_squares[move.target] = m_squares[move.source];
     m_squares[move.source] = Piece::EMPTY;
+
+    // Increment the ply
     ++m_ply;
 }
 

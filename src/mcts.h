@@ -11,7 +11,7 @@ namespace breakthrough {
 
 struct Node {
     Board state;
-    int wins{0};
+    double reward{0.0};
     int visits{0};
     Move move{-1, -1};
     uint64_t parent{0};
@@ -21,8 +21,9 @@ struct Node {
 class MCTS {
 public:
     MCTS() = default;
-    void ponder_mcts(const Board& board, int ms);
+    void ponder(const Board& board, int ms);
     Move choose_best(const Board& board);
+    void reset();
 
 private:
     std::unordered_map<uint64_t, Node> m_stats;

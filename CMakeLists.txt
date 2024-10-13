@@ -11,17 +11,24 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_library(${PROJECT_NAME}_BOARD
-  board.h board.cpp zobrist.h)
+add_library(${PROJECT_NAME}_BOARD_LIB
+  src/board.h
+  src/board.cpp
+  src/zobrist.h
+  src/movegen.h
+  src/movegen.cpp)
 
-add_library(${PROJECT_NAME}_MCTS
-  mcts.h mcts.cpp movegen.h movegen.cpp)
+add_library(${PROJECT_NAME}_MCTS_LIB
+  src/mcts.h
+  src/mcts.cpp
+  src/movegen.h
+  src/movegen.cpp)
 
-# Add the executable for the main project
-add_executable(${PROJECT_NAME} main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE
-  ${PROJECT_NAME}_BOARD
-  ${PROJECT_NAME}_MCTS
+# Add the executable for the main project with mcts
+add_executable(${PROJECT_NAME}_MCTS src/main_mcts.cpp)
+target_link_libraries(${PROJECT_NAME}_MCTS PRIVATE
+  ${PROJECT_NAME}_BOARD_LIB
+  ${PROJECT_NAME}_MCTS_LIB
 )
 
 # Testing configuration
@@ -39,13 +46,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 # Add the test executable
-add_executable(tests test.cpp)
+add_executable(tests src/test.cpp)
 
 # Link the test executable with Catch2
 target_link_libraries(tests PRIVATE
   Catch2::Catch2WithMain
-  ${PROJECT_NAME}_BOARD
-  ${PROJECT_NAME}_MCTS)
+  ${PROJECT_NAME}_BOARD_LIB
+  ${PROJECT_NAME}_MCTS_LIB)
 
 # Add a custom target for running tests
 add_custom_target(run_tests
@@ -57,3 +64,6 @@ add_custom_target(run_tests
 include(CTest)
 include(Catch)
 catch_discover_tests(tests)
+
+# include the sfml subproject
+add_subdirectory(view)

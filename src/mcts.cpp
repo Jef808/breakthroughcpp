@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <random>
 
+#include <iostream>
+
 namespace breakthrough {
 
 namespace {
@@ -22,7 +24,10 @@ inline double ucb1(const Node& node, double C) {
     if (node.visits == 0) {
         return std::numeric_limits<double>::max();
     }
-    return (double)node.wins / node.visits + C * std::sqrt(std::log(stats->at(node.parent).visits));
+    double avrg = node.reward / node.visits;
+    double expl = C * std::sqrt(std::log(stats->at(node.parent).visits) / node.visits);
+    return avrg + expl;
+
 }
 
 inline bool is_leaf(const Node& node) {
@@ -38,20 +43,8 @@ Node& select_ucb(const Node& node, double C = 1.4142135623730951) {
     return stats->at(*it);
 }
 
-bool rollout(const Node& node) {
-    Board board = node.state;
-    bool black_to_play = board.ply() & 1;
-    while (not board.is_terminal()) {
-        const std::vector<Move>& valid_moves = movegen.valid_moves(board);
-        std::uniform_int_distribution<> dis(0, valid_moves.size() - 1);
-        Move move = valid_moves[dis(gen)];
-        board.play(move);
-    }
-    bool black_wins = not (board.ply() & 1);
-    return black_to_play && black_wins;
-}
-
 Node& expand(Node& node) {
+    assert(node.children.empty() && "Trying to expand already expanded node");
     Node* parent = &node;
     auto parent_board = node.state;
     auto parent_hash = parent_board.hash();
@@ -75,33 +68,65 @@ Node& expand(Node& node) {
         it->second.move = move;
         it->second.parent = parent_hash;
     }
+
     return *parent;
 }
 
-void backpropagate(Node& node, bool win) {
-    for (Node* pnode = &node; pnode != nullptr; pnode = &stats->at(pnode->parent)) {
-        pnode->wins += win;
+double rollout(const Node& node) {
+    Board board = node.state;
+    int initial_ply = board.ply();
+    while (not board.is_terminal()) {
+        const std::vector<Move>& valid_moves = movegen.valid_moves(board);
+        std::uniform_int_distribution<> dis(0, valid_moves.size() - 1);
+        Move move = valid_moves[dis(gen)];
+        board.play(move);
+    }
+    int rollout_length = board.ply() - initial_ply;
+    double discount = std::pow(0.99, rollout_length);
+    bool is_win = !(rollout_length & 1);
+    double reward = (2.0 * (double)is_win - 1) * discount;
+    return reward;
+}
+
+void backpropagate(Node& node, double reward) {
+    for (Node* pnode = &node; pnode->parent != 0; pnode = &stats->at(pnode->parent)) {
+        pnode->reward += reward;
         ++pnode->visits;
-        win = !win;
+        reward *= -1.0;
     }
 }
 
 void step(Node& root) {
     Node* node = &root;
+    bool is_mine = true;
     while(not is_leaf(*node)) {
         node = &select_ucb(*node);
+        is_mine = !is_mine;
     }
     node = &expand(*node);
-    for (const auto& child_fen : node->children) {
-        auto& child_node = stats->at(child_fen);
-        bool win = rollout(child_node);
-        backpropagate(child_node, win);
+
+    if (node->state.is_terminal()) {
+        double reward = 2.0 * (double)(is_mine) - 1;
+        backpropagate(*node, reward);
     }
+
+    int n_rollouts = 5;
+    double total_reward = 0.0;
+    for (const auto& child_hash : node->children) {
+        auto& child_node = stats->at(child_hash);
+        for (auto i = 0; i < n_rollouts; ++i) {
+            double reward = rollout(child_node);
+            total_reward -= reward;
+        }
+    }
+
+    double reward = total_reward / (n_rollouts * node->children.size());
+    backpropagate(*node, reward);
 }
 
 } // namespace
 
-void MCTS::ponder_mcts(const Board& board, int ms) {
+void MCTS::ponder(const Board& board, int ms) {
     stats = &m_stats;
 
     Node& root = m_stats[board.hash()];
@@ -124,9 +149,19 @@ void MCTS::ponder_mcts(const Board& board, int ms) {
 }
 
 Move MCTS::choose_best(const Board& board) {
-    const auto& root = m_stats[board.hash()];
-    const auto& child = select_ucb(root, 0);
+    auto& root = m_stats[board.hash()];
+    assert(not root.children.empty() && "cannot choose best on leaf node");
+
+    auto child_hash = *std::max_element(root.children.begin(), root.children.end(),
+                     [&](const auto& a, const auto& b) {
+                         return m_stats[a].visits < m_stats[b].visits;
+                     });
+    const auto& child = m_stats[child_hash];
     return child.move;
+}
+
+void MCTS::reset() {
+    m_stats.clear();
 }
 
 
